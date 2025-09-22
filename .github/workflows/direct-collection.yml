@@ -1,0 +1,27 @@
+---
+name: Direct Collection Research
+on:
+  workflow_dispatch:
+    inputs:
+      research_task:
+        description: 'Research task'
+        required: true
+        default: 'network-tool-optimization'
+
+jobs:
+  direct-research:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Direct Collection Research
+        run: |
+          nix-shell -p curl --run 'curl -s ifconfig.me > external-ip.txt'
+          nix-shell -p nmap --run 'nmap --version > nmap-version.txt'
+          nix-shell -p coreutils --run 'echo "Research task: ${{ github.event.inputs.research_task }}" > task-info.txt'
+          nix-shell -p coreutils --run 'echo "Execution time: $(date)" > execution-time.txt'
+      - name: Upload Research Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-collection-results
+          path: "*.txt"
