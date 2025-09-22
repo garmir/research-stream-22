@@ -1,0 +1,39 @@
+---
+name: Claude Methodology Research
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Research task'
+        required: true
+        default: 'network-optimization'
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+jobs:
+  research-with-claude-methodology:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Clone Claude Methodology Repository
+        run: nix-shell -p git --run 'cd ~ && git clone https://github.com/garmir/claude-methodology.git .claude'
+      - name: Execute Research Using Claude Methodology
+        run: |
+          cd ~ && nix-shell -p nodejs expect --run 'expect -c "
+            set timeout 300
+            spawn npx @anthropic-ai/claude-code --dangerously-skip-permissions \"Using .claude methodology: research ${{ github.event.inputs.task }}. Reference patterns from .claude repository for optimal tool selection and execution.\"
+            expect { -re {.*Choose.*style.*} { send \"1\r\" } }
+            expect { -re {.*bypass permissions.*} { send \"2\r\" } }
+            expect { -re {.*methodology.*|.*research.*|.*Write.*} { exit 0 } timeout { exit 1 } }
+          "' > methodology-research.txt 2>&1
+      - name: Validate Claude Directory
+        run: nix-shell -p coreutils --run 'ls -la ~/.claude/ > claude-dir-contents.txt'
+      - name: Upload Methodology Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-methodology-results
+          path: |
+            methodology-research.txt
+            claude-dir-contents.txt
